@@ -3,48 +3,131 @@ import 'package:heroicons/heroicons.dart';
 import '../../../core/icons/app_icons.dart';
 import '../../../core/layouts/main_layout.dart';
 
-// ConvertedUI - Converted from HTML/CSS
-class IngredientsScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:heroicons/heroicons.dart';
+import '../../../core/icons/app_icons.dart';
+import '../../../core/layouts/main_layout.dart';
+import '../../home/models/food.dart';
+import '../services/ingredient_service.dart';
+
+class IngredientsScreen extends StatefulWidget {
   const IngredientsScreen({super.key});
+
+  @override
+  State<IngredientsScreen> createState() => _IngredientsScreenState();
+}
+
+class _IngredientsScreenState extends State<IngredientsScreen> {
+  final TextEditingController _controller = TextEditingController();
+  final List<String> _selectedIngredients = [];
+  final IngredientService _ingredientService = IngredientService();
+  List<Food> _suggestedFoods = [];
+  bool _isLoading = false;
+  bool _hasSearched = false;
+
+  void _addIngredient() {
+    final text = _controller.text.trim();
+    if (text.isNotEmpty && !_selectedIngredients.contains(text)) {
+      setState(() {
+        _selectedIngredients.add(text);
+        _controller.clear();
+      });
+    }
+  }
+
+  void _removeIngredient(String ingredient) {
+    setState(() {
+      _selectedIngredients.remove(ingredient);
+    });
+  }
+
+  Future<void> _searchFoods() async {
+    if (_selectedIngredients.isEmpty) {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ít nhất 1 nguyên liệu')));
+       return;
+    }
+    setState(() {
+      _isLoading = true;
+      _hasSearched = true;
+    });
+    try {
+      final foods = await _ingredientService.searchFoodsByIngredients(_selectedIngredients);
+      setState(() {
+        _suggestedFoods = foods;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  // Calculate status: "x/y Có sẵn" based on selected ingredients matching food ingredients
+  String _calculateStatus(Food food, Color? color) {
+    // Simple matching: check if food ingredient name contains any selected ingredient string (or vice versa)
+    // For now, let's just count matches.
+    int matches = 0;
+    for (var fIng in food.ingredients) {
+      for (var sIng in _selectedIngredients) {
+        if (fIng.name.toLowerCase().contains(sIng.toLowerCase()) || sIng.toLowerCase().contains(fIng.name.toLowerCase())) {
+          matches++;
+          break;
+        }
+      }
+    }
+    
+    int total = food.ingredients.length;
+    if (matches == total) return 'Đủ nguyên liệu';
+    return '$matches/$total Có sẵn';
+  }
+
+  Color _calculateStatusColor(Food food) {
+    int matches = 0;
+    for (var fIng in food.ingredients) {
+      for (var sIng in _selectedIngredients) {
+        if (fIng.name.toLowerCase().contains(sIng.toLowerCase()) || sIng.toLowerCase().contains(fIng.name.toLowerCase())) {
+          matches++;
+          break;
+        }
+      }
+    }
+    int total = food.ingredients.length;
+    if (matches == total) return Colors.green;
+    if (matches > 0) return Colors.green; // Partial match is still good
+    return Colors.orange;
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF23220f) : const Color(0xFFf8f8f5);
-    // textMain
     final textMain = isDark ? Colors.white : const Color(0xFF1c1c0d);
     final textMuted = isDark ? Colors.grey[400] : const Color(0xFF9e9d47);
-    final surfaceColor = isDark
-        ? const Color(0xFF23220f)
-        : const Color(0xFFf8f8f5);
-    final primaryColor = isDark
-        ? const Color(0xFF23220f)
-        : const Color(0xFFf8f8f5);
+    final surfaceColor = isDark ? const Color(0xFF23220f) : const Color(0xFFf8f8f5);
+    final primaryColor = textMain; // Use text color for icon as per design, or use App primary
+
     return MainLayout(
-      // title thêm bg
       title: 'Foodie',
-      // title: 'Foodie',
       body: Container(
         color: bgColor,
         child: Column(
           children: [
-            // Sticky header - converted from <div class="sticky top-0 z-50...">
+            // Sticky header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: bgColor.withOpacity(0.9),
                 border: Border(
                   bottom: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF374151)
-                        : const Color(0xFFF3F4F6),
+                    color: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
                     width: 1,
                   ),
                 ),
               ),
               child: Row(
                 children: [
-                  // Back button
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -62,7 +145,6 @@ class IngredientsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Title
                   Expanded(
                     child: Text(
                       'Tìm Món Từ Nguyên Liệu',
@@ -74,12 +156,11 @@ class IngredientsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Spacer
                   const SizedBox(width: 40),
                 ],
               ),
             ),
-            // Main content - converted from <main>
+            
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -87,31 +168,25 @@ class IngredientsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 24),
-                    // Header section - converted from <div class="pt-6 pb-4">
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Bạn có gì trong tủ lạnh?',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: textMain,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Chọn ít nhất 2 nguyên liệu để nhận gợi ý tốt nhất.',
-                          style: TextStyle(fontSize: 14, color: textMuted),
-                        ),
-                      ],
+                    Text(
+                      'Bạn có gì trong tủ lạnh?',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: textMain,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Chọn ít nhất 1 nguyên liệu để nhận gợi ý tốt nhất.',
+                      style: TextStyle(fontSize: 14, color: textMuted),
                     ),
                     const SizedBox(height: 16),
-                    // Search input and Add button row - converted from <div class="flex gap-2 mb-4">
+                    
+                    // Input Row
                     Row(
                       children: [
-                        // Search input - converted from <div class="relative flex-1">
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
@@ -126,18 +201,14 @@ class IngredientsScreen extends StatelessWidget {
                               ],
                             ),
                             child: TextField(
+                              controller: _controller,
+                              onSubmitted: (_) => _addIngredient(),
                               decoration: InputDecoration(
                                 hintText: 'Nhập tôm, thịt, trứng...',
                                 hintStyle: TextStyle(color: textMuted),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: textMuted,
-                                ),
+                                prefixIcon: Icon(Icons.search, color: textMuted),
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 filled: true,
                                 fillColor: surfaceColor,
                               ),
@@ -146,18 +217,14 @@ class IngredientsScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // Add button - converted from <button class="bg-surface-light...">
                         Material(
                           color: surfaceColor,
                           borderRadius: BorderRadius.circular(12),
                           child: InkWell(
-                            onTap: () {},
+                            onTap: _addIngredient,
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
@@ -188,201 +255,107 @@ class IngredientsScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Selected ingredients chips - converted from <div class="flex flex-wrap gap-2 mb-6">
+                    
+                    // Chips
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: [
-                        _IngredientChip(
-                          label: 'Thịt heo',
-                          delay: 0,
-                          onRemove: () {},
-                        ),
-                        _IngredientChip(
-                          label: 'Cà chua',
-                          delay: 50,
-                          onRemove: () {},
-                        ),
-                        _IngredientChip(
-                          label: 'Hành lá',
-                          delay: 100,
-                          onRemove: () {},
-                        ),
-                        _IngredientChip(
-                          label: 'Trứng gà',
-                          delay: 150,
-                          onRemove: () {},
-                        ),
-                      ],
+                      children: _selectedIngredients.map((ing) => _IngredientChip(
+                        label: ing,
+                        delay: 0,
+                        onRemove: () => _removeIngredient(ing),
+                      )).toList(),
                     ),
                     const SizedBox(height: 32),
-                    // Search button - converted from <button class="w-full bg-primary...">
+                    
+                    // Search Button
                     SizedBox(
                       width: double.infinity,
                       child: Material(
-                        color: primaryColor,
+                        color: const Color(0xFFFF7A00),
                         borderRadius: BorderRadius.circular(9999),
                         child: InkWell(
-                          onTap: () {},
+                          onTap: _isLoading ? null : _searchFoods,
                           borderRadius: BorderRadius.circular(9999),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 24,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(9999),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: primaryColor.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                            alignment: Alignment.center,
+                            child: _isLoading 
+                              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.soup_kitchen, color: Colors.white),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Gợi ý món ngay',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.soup_kitchen, color: Colors.white),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Gợi ý món ngay',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                       ),
                     ),
+                    
                     const SizedBox(height: 32),
-                    // Divider - converted from <div class="h-px w-full bg-gray-200...">
-                    Container(
-                      height: 1,
-                      color: isDark
-                          ? const Color(0xFF374151)
-                          : const Color(0xFFE5E7EB),
-                    ),
+                    Container(height: 1, color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
                     const SizedBox(height: 24),
-                    // Section header - converted from <div class="flex items-center justify-between mb-4">
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Món ngon có thể nấu',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: textMain,
+                    
+                    // Results Header
+                    if (_suggestedFoods.isNotEmpty || _hasSearched) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Món ngon có thể nấu (${_suggestedFoods.length})',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: textMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Results List
+                    if (_suggestedFoods.isEmpty && _hasSearched && !_isLoading)
+                       Center(child: Text('Không tìm thấy món ăn nào phù hợp.', style: TextStyle(color: textMuted))),
+
+                    Column(
+                      children: _suggestedFoods.map((food) => GestureDetector(
+                        onTap: () {
+                           Navigator.pushNamed(
+                             context, 
+                             '/food-detail',
+                             arguments: food.id,
+                           );
+                        },
+                        child:Padding(
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: _RecipeCard(
+                            imageUrl: food.imageUrl,
+                            title: food.title,
+                            description: food.description,
+                            time: food.time.isNotEmpty ? food.time : '??p',
+                            status: _calculateStatus(food, null),
+                            statusColor: _calculateStatusColor(food),
+                            isDark: isDark,
+                            textMain: textMain,
+                            textMuted: textMuted!,
+                            surfaceColor: surfaceColor,
                           ),
                         ),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? surfaceColor
-                                    : const Color(0xFFF3F4F6),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Dễ làm',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark
-                                      ? const Color(0xFFD1D5DB)
-                                      : Colors.black87,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? surfaceColor
-                                    : const Color(0xFFF3F4F6),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Nhanh',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark
-                                      ? const Color(0xFFD1D5DB)
-                                      : Colors.black87,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      )).toList(),
                     ),
-                    const SizedBox(height: 16),
-                    // Recipe cards - converted from <div class="flex flex-col gap-4">
-                    Column(
-                      children: [
-                        _RecipeCard(
-                          imageUrl:
-                              'https://lh3.googleusercontent.com/aida-public/AB6AXuB6ndnyyV0aNqW73Y3TMtGF1dihTICarLsDlc2Noy6DiuKW0F7KrT-AxhN0JdF6FYrEXS-Qh7Jt558iGXpIgHpHKipHA2uCERD4Fx5qK_84YQFSu6h47KDlETXj4Dz0JpP6aO9tK-Kn2TB0V2VhtTtC5NqVrB5952ScoMmWYJxIo4mqTKQ_LwqzouRTS0qLQaP8tQ8dxXyjscgZ9B79cDGP7BMyCXjFnfkAzH7qiSUzy8Feh6cYDuCaPmWi1N4Hj3GAJW_DqwjbFYYe',
-                          title: 'Canh cà chua trứng',
-                          description:
-                              'Món canh thanh mát, giải nhiệt cho ngày hè nóng nực.',
-                          time: '15p',
-                          status: '3/3 Có sẵn',
-                          statusColor: Colors.green,
-                          isDark: isDark,
-                          textMain: textMain,
-                          textMuted: textMuted!,
-                          surfaceColor: surfaceColor,
-                        ),
-                        const SizedBox(height: 16),
-                        _RecipeCard(
-                          imageUrl:
-                              'https://lh3.googleusercontent.com/aida-public/AB6AXuBz11G9lhThgbG45wwBuOfXiB4xZVlmMrG82yN02ZayBgSN4PDEpLZpFHu9k7dDXlOzrdFOQuIhwpDO2W3EDGiIIlGVULLw3T85WgguA-dfrXrtd9FRKWS8gyJgUJ7yvHE8vHbzq3W11vVgjPJw0LLp2c3AIOLfNTCkiFRoyGdeX57-wXqF4Z7Kgl-fwipcJBzwDhc4Tu2GMvXuS4TB9T4IIzrUKf6Rml7wdoqN1WkjiucgyrLbRno9i-UwOtidYTmwMBQP7q9wsAeo',
-                          title: 'Thịt heo sốt cà chua',
-                          description:
-                              'Đậm đà đưa cơm, thích hợp cho bữa tối gia đình.',
-                          time: '25p',
-                          status: '2/2 Có sẵn',
-                          statusColor: Colors.green,
-                          isDark: isDark,
-                          textMain: textMain,
-                          textMuted: textMuted!,
-                          surfaceColor: surfaceColor,
-                        ),
-                        const SizedBox(height: 16),
-                        _RecipeCard(
-                          imageUrl:
-                              'https://lh3.googleusercontent.com/aida-public/AB6AXuCEJKZ6auC-fgaH5bIg03nFH49qs21FH18220JnooKEkvzhx3jcb8xQ7xUg2b_GZUuyVBSjnvhTO1Xwh6_uHXUnRr6ofpz2dttg_FjtM5GZRbqnA7rxrlps5a2qPGK_Z1SHTDmySuYGjtvOcgBfiKW-UEO8CQ2vesla75sr4281gOOpVSl7xfHEN0-8lvTCmgewUGyFWx_9cJsssOVq0TdVk-tBeqFsbB_pA9fsA3w5xCO9KSs70yLLA8vA_d--1b6i_bVyiyyfl2cj',
-                          title: 'Trứng chiên hành tây',
-                          description:
-                              'Cần thêm hành tây để hoàn thành món này.',
-                          time: '10p',
-                          status: 'Thiếu 1',
-                          statusColor: Colors.orange,
-                          isDark: isDark,
-                          textMain: textMain,
-                          textMuted: textMuted,
-                          surfaceColor: surfaceColor,
-                          opacity: 0.8,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 100), // Space for bottom nav
+                    
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),

@@ -12,10 +12,8 @@ class AuthService extends ChangeNotifier {
   bool _isLoggedIn = false;
   String? _pendingRoute;
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: dotenv.env['GOOGLE_CLIENT_ID'],
-    scopes: ['email', 'profile'],
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  bool _isGoogleInitialized = false;
 
   bool get isLoggedIn => _isLoggedIn;
   String? get pendingRoute => _pendingRoute;
@@ -27,11 +25,15 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> loginWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        return false;
+      if (!_isGoogleInitialized) {
+        await _googleSignIn.initialize(
+          serverClientId: dotenv.env['GOOGLE_CLIENT_ID'],
+        );
+        _isGoogleInitialized = true;
       }
 
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
       final String? idToken = googleAuth.idToken;
@@ -64,7 +66,17 @@ class AuthService extends ChangeNotifier {
   }
 
   void logout() async {
-    await _googleSignIn.signOut();
+    try {
+      if (!_isGoogleInitialized) {
+        await _googleSignIn.initialize(
+           serverClientId: dotenv.env['GOOGLE_CLIENT_ID'],
+        );
+         _isGoogleInitialized = true;
+      }
+      await _googleSignIn.signOut();
+    } catch (e) {
+      print("Sign out error: $e");
+    }
     _isLoggedIn = false;
     _pendingRoute = null;
     notifyListeners();

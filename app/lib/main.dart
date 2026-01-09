@@ -6,6 +6,7 @@ import 'modules/home/screens/home_screen.dart';
 import 'modules/profile/screens/profile_screen.dart';
 import 'modules/ingredients/screens/ingredients_screen.dart';
 import 'modules/favorites/screens/favorites_screen.dart';
+import 'modules/food/screens/food_detail_screen.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
         '/ingredients': (context) => const IngredientsScreen(), // Keep for backward compatibility
         '/favorites': (context) => const FavoritesScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/food-detail': (context) => const FoodDetailScreen(),
       },
     );
   }

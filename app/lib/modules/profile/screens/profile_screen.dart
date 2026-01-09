@@ -1,72 +1,227 @@
 import 'package:flutter/material.dart';
-import 'package:heroicons/heroicons.dart';
 import '../../../core/layouts/main_layout.dart';
-import '../../../core/icons/app_icons.dart';
-import '../widgets/profile_info_tile.dart';
+import '../../../core/auth/auth_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Colors from design
+    const primaryColor = Color(0xFFFF7A00);
+    // const backgroundLight = Color(0xFFF8F8F5); // MainLayout handles this
+
     return MainLayout(
-      title: 'Profile',
+      title: 'Hồ Sơ',
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Column(
           children: [
+            // Profile Header
             const SizedBox(height: 16),
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: HeroIcon(
-                AppIcons.user,
-                size: 60,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
+            _buildAvatarSection(primaryColor),
+            const SizedBox(height: 16),
+            
+            // Name and Email
+            const Text(
+              'Nguyễn Văn A',
+              style: TextStyle(
+                fontFamily: 'Spline Sans',
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1C1C0D), // slate-900
               ),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'nguyenvana@gmail.com',
+              style: TextStyle(
+                fontFamily: 'Noto Sans',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[500],
+              ),
+            ),
+            
+            // Verified Badge
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(9999),
+                border: Border.all(color: primaryColor.withOpacity(0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified, size: 18, color: Colors.orange[600]),
+                  const SizedBox(width: 6),
+                  Text(
+                    'THÀNH VIÊN GOOGLE',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange[700],
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Stats
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildStatCard('12', 'Yêu thích'),
+                const SizedBox(width: 12),
+                _buildStatCard('5', 'Công thức'),
+              ],
+            ),
+
+            // Spacer to push content down if needed, 
+            // but in ScrollView we just add space
+            const SizedBox(height: 80),
+
+            // Logout Button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  AuthService().logout();
+                  Navigator.pushReplacementNamed(context, '/login');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 8,
+                  shadowColor: primaryColor.withOpacity(0.4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                ),
+                icon: const Icon(Icons.logout),
+                label: const Text(
+                  'Đăng xuất',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
+            // Version
             const SizedBox(height: 24),
             Text(
-              'John Doe',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Food Enthusiast',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 32),
-            const ProfileInfoTile(
-              icon: AppIcons.email,
-              label: 'Email',
-              value: 'john.doe@example.com',
-            ),
-            const SizedBox(height: 12),
-            const ProfileInfoTile(
-              icon: AppIcons.phone,
-              label: 'Phone',
-              value: '+1 234 567 8900',
-            ),
-            const SizedBox(height: 12),
-            const ProfileInfoTile(
-              icon: AppIcons.location,
-              label: 'Address',
-              value: '123 Main Street, City',
-            ),
-            const SizedBox(height: 12),
-            const ProfileInfoTile(
-              icon: AppIcons.calendar,
-              label: 'Member Since',
-              value: 'January 2024',
+              'Phiên bản 2.4.0',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[400],
+              ),
             ),
           ],
         ),
       ),
     );
   }
-}
 
+  Widget _buildAvatarSection(Color primaryColor) {
+    return Stack(
+      children: [
+        Container(
+          width: 128,
+          height: 128,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.bottomLeft,
+              end: Alignment.topRight,
+              colors: [
+                primaryColor,
+                Colors.orange[300]!,
+              ],
+            ),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFF8F8F5), width: 4),
+              color: Colors.grey[200],
+              image: const DecorationImage(
+                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCNTyXbaXdmlVO4cZr6y2fgwoS8r8tZbB2mtMzc5iEJ2upg17WbNlaWlEpXhW3OHIngWDe_DbXa01rNs1dhCjVfsaNibgyw02Uno38Hw1kOeDJiUx5RnFuCIszsx65rAGnea9CZC-gkldymNsdMv_LaLitVwW0g4X3T_UMwL2g8_ANkKgMDMDq2nGl4d6kUW2iPqG9qSVqohyl-F1WHf8NDs_X9o8It9NCRBuj0SUs5FcQQcEhJfuS0dPJS6_ijFgJniUftjKe2x8GU'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 4,
+          right: 4,
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(color: Colors.grey[100]!),
+            ),
+             child: const Text('G', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 18, fontFamily: 'sans-serif')),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String value, String label) {
+    return Container(
+      width: 112, // 28 * 4
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[100]!),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1C1C0D),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[400],
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

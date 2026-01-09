@@ -45,7 +45,11 @@ class _FoodCardState extends State<FoodCard> {
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
-        widget.onTap?.call();
+        if (widget.onTap != null) {
+          widget.onTap!();
+        } else {
+          Navigator.pushNamed(context, '/food-detail');
+        }
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
@@ -166,7 +170,8 @@ class _FoodCardState extends State<FoodCard> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: widget.onTap,
+                        onPressed: widget.onTap ??
+                            () => Navigator.pushNamed(context, '/food-detail'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDark ? Colors.grey[800] : Colors.grey[100],
                           foregroundColor: textPrimary,
@@ -205,4 +210,3 @@ class _FoodCardState extends State<FoodCard> {
     );
   }
 }
-

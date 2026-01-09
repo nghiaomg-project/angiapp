@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../../core/layouts/main_layout.dart';
 import '../widgets/food_card.dart';
+import '../services/food_service.dart';
+import '../models/food.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<Food>> _foodsFuture;
+  final FoodService _foodService = FoodService();
+
+  @override
+  void initState() {
+    super.initState();
+    _foodsFuture = _foodService.getFoods();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,9 +29,7 @@ class HomeScreen extends StatelessWidget {
     final textSecondary = isDark ? Colors.grey[400] : const Color(0xFF9e9d47);
 
     return MainLayout(
-      // title thêm bg
       title: 'Foodie',
-      // title: 'Foodie',
       body: Container(
         color: bgColor,
         child: Stack(
@@ -36,53 +50,33 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  FoodCard(
-                    title: 'Bún Chả Hà Nội',
-                    description:
-                        'Thịt nướng than hoa thơm lừng, ăn kèm bún rối trắng ngần và nước chấm chua ngọt đậm đà hương vị truyền thống.',
-                    imageUrl:
-                        'https://lh3.googleusercontent.com/aida-public/AB6AXuCs1q6Yieitc_5768o2jGPhguLqqVCZb6O2VHjY_Ye-9yglzKV1upX8dMtgavabF6VCFwtjpn5z1QWXs0AzUXTD6R4c6IbiDCPN91-30kP0IDRMLu1YuxFcsLV2Fix9xaWRlnJX9Ib6IlI3X_2GSPprSAYtsIr3DP3mmW6evDsevwsr_EO-TeypCcBizOu2aZ0MAg3J2bKiiJZuJWX_lGR3DNdvb3vVm1uVSGNMlegH1jsqLxyiyvrvVloaVDgEb3gX5VnDMWWa1LuL',
-                    imageAlt:
-                        'Grilled pork patties with noodles and dipping sauce',
-                    isFavorite: false,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Xem công thức: Bún Chả Hà Nội'),
-                        ),
-                      );
-                    },
-                  ),
-                  FoodCard(
-                    title: 'Bánh Xèo Miền Tây',
-                    description:
-                        'Vỏ bánh vàng ươm giòn rụm, nhân tôm thịt đầy đặn cùng giá đỗ, cuốn rau sống chấm mắm chua ngọt.',
-                    imageUrl:
-                        'https://lh3.googleusercontent.com/aida-public/AB6AXuBx0E2FjzFsMskL5edfdvFJkPIC8Xgdn01n1StOEWHL5Fr0-UXp4y-urdOunpN-_gZLSLGbmsros977Zotkh_AUx3cqM9w-la0cX8cEVBac7USm1tXl42Nzqr2cLCPffYu5lnXwJNch-2ceRhKNeuE2SPRhmPA200s99_27wx6mwuIoL7CsS2jcTbdXc3xg3A370YPP5_EGAGfX1ppY9KIFuVgEvTvcun8MDaSa81MLMEWdV6esMJClMM1fSJpgiwZ62t_frjNHPz2q',
-                    imageAlt:
-                        'Crispy yellow Vietnamese pancake filled with shrimp and sprouts',
-                    isFavorite: true,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Xem công thức: Bánh Xèo Miền Tây'),
-                        ),
-                      );
-                    },
-                  ),
-                  FoodCard(
-                    title: 'Phở Bò Tái Nạm',
-                    description:
-                        'Nước dùng ngọt thanh từ xương hầm 24h, bánh phở mềm dai và thịt bò tươi ngon thượng hạng.',
-                    imageUrl:
-                        'https://lh3.googleusercontent.com/aida-public/AB6AXuChsqG0EhDYhWGXH0i17bgKT0qd557VMU5ERoeu7yBe1_XhvzjQQuHVwyiVEsIf8Oc5WiiRa72FG-PBtdSpEtsQbfupdElf7CD3Agybb1NY3f-vMMYcgv3FOnogKV3xlVsOHXxPO4OtNpoWfedSYHqmDsivY9GkWnuuYgY08FnvPOjoZaF4vPSvUwwC1b5mhCPqF6dYlrizATPC5EEtLSku0nwAvl9BwkxWCeMh3YfYeQhaIpPdrYYPgtkng4YZ7uZZMaGB0CGPl-Yq',
-                    imageAlt: 'Traditional beef noodle soup in a bowl',
-                    isFavorite: false,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Xem công thức: Phở Bò Tái Nạm'),
-                        ),
+                  FutureBuilder<List<Food>>(
+                    future: _foodsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text('Lỗi: ${snapshot.error}'));
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                         return const Center(child: Text('Chưa có món ăn nào.'));
+                      }
+
+                      final foods = snapshot.data!;
+                      return Column(
+                        children: foods.map((food) => FoodCard(
+                          title: food.title,
+                          description: food.description,
+                          imageUrl: food.imageUrl,
+                          imageAlt: food.imageAlt,
+                          isFavorite: food.isFavorite,
+                          onTap: () {
+                             Navigator.pushNamed(
+                               context, 
+                               '/food-detail',
+                               arguments: food.id,
+                             );
+                          },
+                        )).toList(),
                       );
                     },
                   ),

@@ -20,7 +20,30 @@ class MainLayout extends StatelessWidget {
     final bgColor = isDark ? const Color(0xFF23220f) : const Color(0xFFf8f8f5);
 
     return Scaffold(
-      appBar: AppBar(title: Text(title), backgroundColor: bgColor),
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor: bgColor,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/profile');
+              },
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.grey[300],
+                backgroundImage: authService.currentUser?.photoUrl != null
+                    ? NetworkImage(authService.currentUser!.photoUrl!)
+                    : null,
+                child: authService.currentUser?.photoUrl == null
+                    ? const Icon(Icons.person, color: Colors.grey)
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(child: body),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: effectiveIndex,

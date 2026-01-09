@@ -62,3 +62,34 @@ func (r *MongoFoodRepository) Delete(ctx context.Context, id string) error {
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
+
+func (r *MongoFoodRepository) SearchByIngredients(ctx context.Context, ingredients []string) ([]model.Food, error) {
+	if len(ingredients) == 0 {
+		return []model.Food{}, nil
+	}
+
+	// Create a filter to find foods matching ANY of the ingredients (case-insensitive)
+	var orConditions []bson.M
+	for _, ing := range ingredients {
+		orConditions = append(orConditions, bson.M{
+			"ingredients.name": bson.M{
+				"$regex":   ing,
+				"$options": "i",
+			},
+		})
+	}
+
+	filter := bson.M{"$or": orConditions}
+
+	cursor, err := r.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var foods []model.Food
+	if err := cursor.All(ctx, &foods); err != nil {
+		return nil, err
+	}
+	return foods, nil
+}

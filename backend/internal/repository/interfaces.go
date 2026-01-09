@@ -11,6 +11,7 @@ type FoodRepository interface {
 	Create(ctx context.Context, food model.Food) error
 	Update(ctx context.Context, id string, food model.Food) error
 	Delete(ctx context.Context, id string) error
+	SearchByIngredients(ctx context.Context, ingredients []string) ([]model.Food, error)
 }
 
 type UserRepository interface {

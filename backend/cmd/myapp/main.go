@@ -3,6 +3,7 @@ package main
 import (
 	"backend/internal/handler"
 	"backend/internal/repository"
+	"backend/internal/router"
 	"backend/internal/service"
 	"backend/pkg/database"
 	"backend/pkg/logger"
@@ -53,24 +54,7 @@ func main() {
 	userHandler := handler.NewUserHandler(userService)
 
 	// Router
-	mux := http.NewServeMux()
-
-	// Routes
-	// Routes
-	mux.HandleFunc("GET /api/foods", foodHandler.GetFoods)
-	mux.HandleFunc("POST /api/foods", foodHandler.CreateFood)
-	mux.HandleFunc("PUT /api/foods/{id}", foodHandler.UpdateFood)
-	mux.HandleFunc("DELETE /api/foods/{id}", foodHandler.DeleteFood)
-
-	mux.HandleFunc("GET /api/profile", userHandler.GetProfile)
-	mux.HandleFunc("PUT /api/profile", userHandler.UpdateProfile)
-
-	mux.HandleFunc("POST /api/login", userHandler.Login)
-	mux.HandleFunc("POST /api/login/google", userHandler.GoogleLogin)
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
+	mux := router.NewRouter(foodHandler, userHandler)
 
 	// Server
 	port := os.Getenv("PORT")
