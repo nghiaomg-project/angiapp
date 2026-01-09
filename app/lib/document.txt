@@ -1,0 +1,339 @@
+TÀI LIỆU KỸ THUẬT - AN GI APP
+================================
+
+1. APPLICATION STARTUP FLOW
+---------------------------
+
+File: lib/main.dart
+
+Hàm main() gọi runApp(const MyApp()) để khởi động ứng dụng.
+
+MyApp là StatelessWidget cấu hình MaterialApp với:
+- title: 'An Gi App'
+- theme: AppTheme.lightTheme (từ core/theme/app_theme.dart)
+- initialRoute: '/home' (ứng dụng mở trực tiếp màn hình Home, không yêu cầu login)
+- routes: Định nghĩa 3 route chính
+  * '/login': LoginScreen
+  * '/home': HomeScreen
+  * '/profile': ProfileScreen
+
+MaterialApp sử dụng named routes, không có onGenerateRoute hay onUnknownRoute. Tất cả navigation đều thông qua route names đã định nghĩa.
+
+
+2. CORE ARCHITECTURE OVERVIEW
+------------------------------
+
+Cấu trúc thư mục lib/:
+
+core/
+  - Chứa các thành phần dùng chung cho toàn ứng dụng
+  - auth/: Hệ thống authentication (AuthService, AuthGuard)
+  - config/: Cấu hình (protected_screens.dart)
+  - layouts/: Layout dùng chung (MainLayout)
+  - theme/: Theme configuration (AppTheme)
+  - widgets/: Widget dùng chung (AppDrawer)
+
+modules/
+  - Chứa các module chức năng độc lập
+  - Mỗi module có cấu trúc: screens/ và widgets/
+  - home/: Module màn hình chính
+  - profile/: Module màn hình profile (yêu cầu login)
+  - login/: Module màn hình đăng nhập
+
+UI-first design rationale:
+- Tập trung vào UI, không có backend hay API
+- Authentication là fake, lưu state trong memory
+- Không có state management phức tạp (không Provider, Bloc, Riverpod)
+- Code sạch, dễ đọc, tái sử dụng được
+
+
+3. AUTHENTICATION FLOW (SCREEN-BASED)
+--------------------------------------
+
+3.1. AuthService (core/auth/auth_service.dart)
+
+Trách nhiệm:
+- Quản lý trạng thái đăng nhập của user
+- Lưu route đang chờ (pending route) khi user cố truy cập protected screen
+- Implement singleton pattern để đảm bảo chỉ có một instance duy nhất
+
+Biến trạng thái:
+- _isLoggedIn: bool, mặc định false
+- _pendingRoute: String?, lưu route mà user muốn truy cập trước khi login
+
+Phương thức:
+- login(): Set _isLoggedIn = true, gọi notifyListeners() để cập nhật UI
+- logout(): Set _isLoggedIn = false, xóa _pendingRoute, gọi notifyListeners()
+- setPendingRoute(String? route): Lưu route đang chờ
+- clearPendingRoute(): Xóa pending route sau khi đã navigate
+
+AuthService extends ChangeNotifier để các widget có thể lắng nghe thay đổi trạng thái.
+
+3.2. ProtectedScreens (core/config/protected_screens.dart)
+
+Cấu hình màn hình cần đăng nhập:
+- protectedRoutes: Set<String> chứa danh sách route names cần bảo vệ
+- Hiện tại chỉ có '/profile' trong danh sách
+
+Cách thêm màn hình được bảo vệ:
+- Thêm route name vào Set protectedRoutes trong protected_screens.dart
+- Ví dụ: thêm '/settings' vào Set nếu muốn Settings screen yêu cầu login
+
+Cách xóa màn hình được bảo vệ:
+- Xóa route name khỏi Set protectedRoutes
+
+3.3. AuthGuard (core/auth/auth_guard.dart)
+
+Luồng kiểm tra:
+- AuthGuard.navigate(context, routeName) được gọi khi muốn navigate đến một route
+- Kiểm tra: ProtectedScreens.isProtected(routeName) && !_authService.isLoggedIn
+- Nếu route được bảo vệ VÀ user chưa login:
+  * Lưu route vào pendingRoute
+  * Navigate đến '/login' bằng pushReplacementNamed
+- Nếu route không được bảo vệ HOẶC user đã login:
+  * Navigate trực tiếp đến route bằng pushReplacementNamed
+  * Kiểm tra tránh navigate nếu đang ở route đó rồi
+
+Redirect sang Login:
+- Khi user cố truy cập protected screen mà chưa login, AuthGuard tự động redirect đến '/login'
+- Route ban đầu được lưu vào AuthService.pendingRoute
+
+Quay lại màn hình ban đầu sau khi login:
+- AuthGuard.navigateAfterLogin(context) được gọi sau khi login thành công
+- Lấy pendingRoute từ AuthService, nếu null thì dùng '/home'
+- Xóa pendingRoute
+- Navigate đến route đó bằng pushReplacementNamed
+
+
+4. NAVIGATION FLOW
+------------------
+
+4.1. Drawer Navigation (core/widgets/app_drawer.dart)
+
+AppDrawer sử dụng ListenableBuilder để lắng nghe thay đổi từ AuthService.
+
+Menu items:
+- Home: Luôn hiển thị, gọi AuthGuard.navigate(context, '/home')
+- Profile: Luôn hiển thị, gọi AuthGuard.navigate(context, '/profile')
+- Logout: Chỉ hiển thị khi authService.isLoggedIn == true
+  * Khi tap: Gọi authService.logout(), sau đó navigate về '/home'
+
+Tất cả navigation trong Drawer đều đi qua AuthGuard.navigate() để đảm bảo kiểm tra authentication.
+
+4.2. AuthGuard.navigate()
+
+Luồng xử lý:
+1. Kiểm tra route có được bảo vệ không (ProtectedScreens.isProtected)
+2. Kiểm tra user đã login chưa (AuthService.isLoggedIn)
+3. Nếu cần bảo vệ và chưa login:
+   - Lưu route vào pendingRoute
+   - Redirect đến '/login'
+4. Nếu không cần bảo vệ hoặc đã login:
+   - Kiểm tra đang ở route đó chưa (tránh navigate không cần thiết)
+   - Navigate bằng pushReplacementNamed
+
+4.3. push vs pushReplacementNamed
+
+Ứng dụng sử dụng pushReplacementNamed cho tất cả navigation:
+- Thay thế route hiện tại trong stack
+- Không cho phép quay lại màn hình trước bằng back button
+- Phù hợp với flow: Login -> Home/Profile, không cần quay lại Login
+
+4.4. Logout Flow
+
+Khi user tap Logout trong Drawer:
+1. Navigator.pop(context) - đóng Drawer
+2. authService.logout() - set isLoggedIn = false, xóa pendingRoute, notify listeners
+3. AuthGuard.navigate(context, '/home') - navigate về Home
+4. Drawer tự động cập nhật (nhờ ListenableBuilder) - ẩn Logout menu item
+
+
+5. LAYOUT SYSTEM
+----------------
+
+5.1. MainLayout (core/layouts/main_layout.dart)
+
+MainLayout là wrapper widget cung cấp:
+- Scaffold với AppBar (title từ parameter)
+- Drawer (AppDrawer widget)
+- SafeArea cho body
+
+Các màn hình sử dụng MainLayout:
+- HomeScreen: Dùng MainLayout với title 'Home'
+- ProfileScreen: Dùng MainLayout với title 'Profile'
+
+Các màn hình KHÔNG dùng MainLayout:
+- LoginScreen: Tự tạo Scaffold riêng, không có Drawer
+
+5.2. Drawer được gắn ở đâu
+
+Drawer được gắn trong MainLayout:
+- MainLayout tạo Scaffold với drawer: const AppDrawer()
+- Tất cả màn hình dùng MainLayout sẽ tự động có Drawer
+
+5.3. Màn hình nào dùng / không dùng Layout
+
+Dùng MainLayout:
+- HomeScreen
+- ProfileScreen
+
+Không dùng MainLayout:
+- LoginScreen (tự quản lý Scaffold, không có Drawer)
+
+
+6. MODULE BREAKDOWN
+-------------------
+
+6.1. Module Home (modules/home/)
+
+Vai trò: Màn hình chính của ứng dụng, hiển thị danh sách các tùy chọn (Popular Dishes, Restaurants, Categories, Favorites, Orders)
+
+Screens:
+- home_screen.dart: HomeScreen
+  * Trách nhiệm: Hiển thị welcome message và danh sách HomeCard
+  * Sử dụng MainLayout
+  * Không yêu cầu login (không có trong protected_screens.dart)
+
+Widgets:
+- home_card.dart: HomeCard
+  * Dùng ở: HomeScreen, hiển thị từng card trong danh sách
+  * Lý do tách riêng: Tái sử dụng, dễ maintain, mỗi card có logic riêng (onTap callback)
+  * Props: title, subtitle, icon, onTap
+
+6.2. Module Profile (modules/profile/)
+
+Vai trò: Màn hình hiển thị thông tin user, yêu cầu đăng nhập
+
+Screens:
+- profile_screen.dart: ProfileScreen
+  * Trách nhiệm: Hiển thị avatar, tên, và các thông tin profile (email, phone, address, member since)
+  * Sử dụng MainLayout
+  * Yêu cầu login (có trong protected_screens.dart)
+
+Widgets:
+- profile_info_tile.dart: ProfileInfoTile
+  * Dùng ở: ProfileScreen, hiển thị từng thông tin (email, phone, address, member since)
+  * Lý do tách riêng: Tái sử dụng, đồng nhất UI cho các thông tin
+  * Props: icon, label, value
+
+6.3. Module Login (modules/login/)
+
+Vai trò: Màn hình đăng nhập, xác thực user (fake authentication)
+
+Screens:
+- login_screen.dart: LoginScreen
+  * Trách nhiệm: Hiển thị UI đăng nhập, xử lý navigation sau khi login thành công
+  * Không dùng MainLayout (tự quản lý Scaffold)
+  * Sau khi login: Gọi AuthService().login(), sau đó AuthGuard.navigateAfterLogin(context)
+
+Widgets:
+- login_form.dart: LoginForm
+  * Dùng ở: LoginScreen
+  * Lý do tách riêng: Tách biệt logic form validation, dễ test và maintain
+  * StatefulWidget quản lý: email controller, password controller, obscure password state
+  * Validation: Email phải có '@', password tối thiểu 6 ký tự
+  * Props: onLoginSuccess callback
+
+
+7. SCREEN FLOW EXAMPLES
+------------------------
+
+7.1. User mở app → Home → Profile (chưa login) → Login → Profile
+
+Bước 1: User mở app
+- main.dart: initialRoute = '/home'
+- MaterialApp render HomeScreen
+- HomeScreen sử dụng MainLayout, có Drawer
+
+Bước 2: User tap Profile trong Drawer
+- AppDrawer: onTap gọi AuthGuard.navigate(context, '/profile')
+- AuthGuard kiểm tra: '/profile' có trong protectedRoutes (có), isLoggedIn = false
+- AuthGuard: setPendingRoute('/profile'), pushReplacementNamed('/login')
+- LoginScreen được hiển thị
+
+Bước 3: User nhập email và password, tap Login
+- LoginForm: validate form, nếu hợp lệ gọi onLoginSuccess
+- LoginScreen: onLoginSuccess gọi AuthService().login() và AuthGuard.navigateAfterLogin(context)
+- AuthService: set _isLoggedIn = true, notifyListeners()
+- AuthGuard.navigateAfterLogin: Lấy pendingRoute = '/profile', clearPendingRoute, pushReplacementNamed('/profile')
+- ProfileScreen được hiển thị
+
+7.2. User login → Logout → quay về Home
+
+Bước 1: User đã login (isLoggedIn = true)
+- Drawer hiển thị menu Logout (nhờ ListenableBuilder lắng nghe AuthService)
+
+Bước 2: User tap Logout trong Drawer
+- AppDrawer: onTap gọi authService.logout() và AuthGuard.navigate(context, '/home')
+- AuthService: set _isLoggedIn = false, _pendingRoute = null, notifyListeners()
+- AuthGuard: Navigate đến '/home' (không cần check vì '/home' không protected)
+- HomeScreen được hiển thị
+- Drawer tự động cập nhật, ẩn Logout menu item
+
+
+8. EXTENSION GUIDE
+------------------
+
+8.1. Cách thêm màn hình mới
+
+Bước 1: Tạo module mới trong modules/
+  modules/
+    new_module/
+      screens/
+        new_screen.dart
+      widgets/
+        (nếu cần)
+
+Bước 2: Tạo screen widget
+  - Nếu cần Drawer: Sử dụng MainLayout
+  - Nếu không cần Drawer: Tự tạo Scaffold
+
+Bước 3: Thêm route vào main.dart
+  routes: {
+    '/new_screen': (context) => const NewScreen(),
+  }
+
+Bước 4: Nếu cần navigation từ Drawer:
+  - Thêm ListTile vào AppDrawer
+  - Sử dụng AuthGuard.navigate(context, '/new_screen')
+
+8.2. Cách cấu hình màn hình yêu cầu login
+
+Bước 1: Thêm route name vào protected_screens.dart
+  static const Set<String> protectedRoutes = {
+    '/profile',
+    '/new_screen',  // Thêm vào đây
+  };
+
+Bước 2: Đảm bảo tất cả navigation đến màn hình này đi qua AuthGuard.navigate()
+  - Nếu từ Drawer: Đã tự động đi qua AuthGuard
+  - Nếu từ code khác: Phải gọi AuthGuard.navigate(context, '/new_screen')
+
+8.3. Những file KHÔNG nên chỉnh
+
+core/auth/auth_service.dart:
+- Không nên thay đổi cấu trúc singleton
+- Không nên thêm persistence (SharedPreferences) nếu không cần thiết
+- Logic login/logout nên giữ đơn giản
+
+core/auth/auth_guard.dart:
+- Không nên thay đổi logic kiểm tra authentication
+- Luồng navigate phải giữ nguyên để đảm bảo tính nhất quán
+
+core/config/protected_screens.dart:
+- Chỉ thêm/xóa route names, không thay đổi cấu trúc class
+
+core/layouts/main_layout.dart:
+- Không nên thay đổi cấu trúc Scaffold/Drawer
+- Nếu cần thay đổi layout, tạo layout mới thay vì sửa MainLayout
+
+core/widgets/app_drawer.dart:
+- Không nên thay đổi cách sử dụng AuthGuard
+- Không nên thay đổi ListenableBuilder pattern
+
+main.dart:
+- Không nên thay đổi initialRoute nếu không có lý do rõ ràng
+- Routes configuration nên giữ nguyên cấu trúc
+
+LƯU Ý: Tài liệu này mô tả codebase hiện tại. Nếu có thay đổi trong code, cần cập nhật tài liệu tương ứng.
+
