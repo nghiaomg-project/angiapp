@@ -7,8 +7,14 @@ import '../icons/app_icons.dart';
 class MainLayout extends StatelessWidget {
   final String title;
   final Widget body;
+  final bool showAppBar;
 
-  const MainLayout({super.key, required this.title, required this.body});
+  const MainLayout({
+    super.key, 
+    required this.title, 
+    required this.body,
+    this.showAppBar = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +26,7 @@ class MainLayout extends StatelessWidget {
     final bgColor = isDark ? const Color(0xFF23220f) : const Color(0xFFf8f8f5);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: showAppBar ? AppBar(
         title: Text(title),
         backgroundColor: bgColor,
         actions: [
@@ -43,7 +49,7 @@ class MainLayout extends StatelessWidget {
             ),
           ),
         ],
-      ),
+      ) : null,
       body: SafeArea(child: body),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: effectiveIndex,

@@ -2,8 +2,26 @@ import 'package:flutter/material.dart';
 import '../../../core/layouts/main_layout.dart';
 import '../../../core/auth/auth_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final AuthService _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_authService.isLoggedIn) {
+        _authService.setPendingRoute('/profile');
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +29,12 @@ class ProfileScreen extends StatelessWidget {
     const primaryColor = Color(0xFFFF7A00);
     // const backgroundLight = Color(0xFFF8F8F5); // MainLayout handles this
 
-    final user = AuthService().currentUser;
+    final user = _authService.currentUser;
+
+    // If redirecting, we might want to return Empty container or Loading
+    if (!_authService.isLoggedIn) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return MainLayout(
       title: 'Hồ Sơ',

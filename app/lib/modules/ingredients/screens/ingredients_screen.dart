@@ -109,7 +109,8 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
     final primaryColor = textMain; // Use text color for icon as per design, or use App primary
 
     return MainLayout(
-      title: 'Foodie',
+      title: 'Tìm Món Từ Nguyên Liệu',
+      showAppBar: false,
       body: Container(
         color: bgColor,
         child: Column(
@@ -128,23 +129,6 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
               ),
               child: Row(
                 children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.arrow_back,
-                          size: 24,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                  ),
                   Expanded(
                     child: Text(
                       'Tìm Món Từ Nguyên Liệu',
@@ -156,7 +140,6 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 40),
                 ],
               ),
             ),

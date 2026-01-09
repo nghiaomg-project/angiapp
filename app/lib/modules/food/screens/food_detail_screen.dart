@@ -181,41 +181,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                           const SizedBox(height: 32),
 
                           // Actions
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () {},
-                                  icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Bắt đầu nấu'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryColor,
-                                    foregroundColor: Colors.white,
-                                    elevation: 4,
-                                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.grey[300]!),
-                                  color: Colors.white,
-                                ),
-                                child: IconButton(
-                                  icon: Icon(food.isFavorite ? Icons.favorite : Icons.favorite_border),
-                                  color: food.isFavorite ? Colors.red : Colors.grey[500],
-                                  iconSize: 24,
-                                  onPressed: _toggleFavorite,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 32),
-
+                          // Removed "Bắt đầu nấu" button and old favorite button as requested.
+                          
                           // Ingredients
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -256,7 +223,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                 ),
               ),
 
-              // Custom App Bar (Back and Share) - Moved to bottom to be on top
+              // Custom App Bar (Back and Favorite)
               Positioned(
                 top: MediaQuery.of(context).padding.top + 10,
                 left: 16,
@@ -265,7 +232,11 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildGlassButton(Icons.arrow_back, () => Navigator.pop(context)),
-                    _buildGlassButton(Icons.share, () {}),
+                    _buildGlassButton(
+                      food.isFavorite ? Icons.favorite : Icons.favorite_border, 
+                      _toggleFavorite,
+                      color: food.isFavorite ? Colors.red : Colors.white,
+                    ),
                   ],
                 ),
               ),
@@ -274,7 +245,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
     );
   }
 
-  Widget _buildGlassButton(IconData icon, VoidCallback onPressed) {
+  Widget _buildGlassButton(IconData icon, VoidCallback onPressed, {Color color = Colors.white}) {
     return Container(
       width: 40,
       height: 40,
@@ -283,7 +254,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
         shape: BoxShape.circle,
       ),
       child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 20),
+        icon: Icon(icon, color: color, size: 20),
         onPressed: onPressed,
       ),
     );
