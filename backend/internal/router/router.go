@@ -2,6 +2,7 @@ package router
 
 import (
 	"backend/internal/handler"
+	"backend/internal/middleware"
 	"log/slog"
 	"net/http"
 	"os"
@@ -30,8 +31,8 @@ func NewRouter(foodHandler *handler.FoodHandler, userHandler *handler.UserHandle
 	mux.HandleFunc("DELETE /api/foods/{id}", foodHandler.DeleteFood)
 
 	// User Routes
-	mux.HandleFunc("GET /api/profile", userHandler.GetProfile)
-	mux.HandleFunc("PUT /api/profile", userHandler.UpdateProfile)
+	mux.Handle("GET /api/profile", middleware.AuthMiddleware(http.HandlerFunc(userHandler.GetProfile)))
+	mux.Handle("PUT /api/profile", middleware.AuthMiddleware(http.HandlerFunc(userHandler.UpdateProfile)))
 
 	// Auth Routes
 	mux.HandleFunc("POST /api/login", userHandler.Login)

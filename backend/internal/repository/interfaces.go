@@ -12,6 +12,8 @@ type FoodRepository interface {
 	Update(ctx context.Context, id string, food model.Food) error
 	Delete(ctx context.Context, id string) error
 	SearchByIngredients(ctx context.Context, ingredients []string) ([]model.Food, error)
+	CountFavorites(ctx context.Context) (int64, error)
+	CountAll(ctx context.Context) (int64, error)
 }
 
 type UserRepository interface {

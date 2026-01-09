@@ -47,7 +47,7 @@ func main() {
 
 	// Services
 	foodService := service.NewFoodService(foodRepo)
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(userRepo, foodRepo)
 
 	// Handlers
 	foodHandler := handler.NewFoodHandler(foodService)

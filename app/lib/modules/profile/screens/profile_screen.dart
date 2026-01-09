@@ -25,13 +25,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Colors from design
     const primaryColor = Color(0xFFFF7A00);
-    // const backgroundLight = Color(0xFFF8F8F5); // MainLayout handles this
 
-    final user = _authService.currentUser;
+    final googleUser = _authService.currentUser;
+    final backendUser = _authService.backendUser;
 
-    // If redirecting, we might want to return Empty container or Loading
+    final displayName = backendUser?['name'] ?? googleUser?.displayName ?? 'Chưa đặt tên';
+    final email = backendUser?['email'] ?? googleUser?.email ?? 'Chưa có email';
+    final String? backendAvatar = backendUser?['avatar_url'];
+    final photoUrl = (backendAvatar != null && backendAvatar.isNotEmpty) 
+        ? backendAvatar 
+        : googleUser?.photoUrl;
+    
+    final favoritesCount = backendUser?['favorites_count']?.toString() ?? '0';
+    final recipesCount = backendUser?['recipes_count']?.toString() ?? '0';
+
     if (!_authService.isLoggedIn) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -44,12 +52,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             // Profile Header
             const SizedBox(height: 16),
-            _buildAvatarSection(primaryColor, user?.photoUrl),
+            _buildAvatarSection(primaryColor, photoUrl),
             const SizedBox(height: 16),
             
             // Name and Email
             Text(
-              user?.displayName ?? 'Chưa đặt tên',
+              displayName,
               style: const TextStyle(
                 fontFamily: 'Spline Sans',
                 fontSize: 24,
@@ -59,7 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              user?.email ?? 'Chưa có email',
+              email,
               style: TextStyle(
                 fontFamily: 'Noto Sans',
                 fontSize: 16,
@@ -100,9 +108,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildStatCard('12', 'Yêu thích'),
+                _buildStatCard(favoritesCount, 'Yêu thích'),
                 const SizedBox(width: 12),
-                _buildStatCard('5', 'Công thức'),
+                _buildStatCard(recipesCount, 'Công thức'),
               ],
             ),
 
@@ -216,7 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildStatCard(String value, String label) {
     return Container(
-      width: 112, // 28 * 4
+      width: 112,
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,

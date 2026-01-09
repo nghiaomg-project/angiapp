@@ -25,6 +25,11 @@ class MainLayout extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF23220f) : const Color(0xFFf8f8f5);
 
+    final String? backendAvatar = authService.backendUser?['avatar_url'];
+    final photoUrl = (backendAvatar != null && backendAvatar.isNotEmpty) 
+        ? backendAvatar 
+        : authService.currentUser?.photoUrl;
+
     return Scaffold(
       appBar: showAppBar ? AppBar(
         title: Text(title),
@@ -39,10 +44,10 @@ class MainLayout extends StatelessWidget {
               child: CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.grey[300],
-                backgroundImage: authService.currentUser?.photoUrl != null
-                    ? NetworkImage(authService.currentUser!.photoUrl!)
+                backgroundImage: photoUrl != null
+                    ? NetworkImage(photoUrl)
                     : null,
-                child: authService.currentUser?.photoUrl == null
+                child: photoUrl == null
                     ? const Icon(Icons.person, color: Colors.grey)
                     : null,
               ),

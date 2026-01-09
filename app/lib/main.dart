@@ -7,9 +7,12 @@ import 'modules/profile/screens/profile_screen.dart';
 import 'modules/ingredients/screens/ingredients_screen.dart';
 import 'modules/favorites/screens/favorites_screen.dart';
 import 'modules/food/screens/food_detail_screen.dart';
+import 'core/auth/auth_service.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  await AuthService().init();
   runApp(const MyApp());
 }
 

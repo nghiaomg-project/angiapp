@@ -21,6 +21,16 @@ class _HomeScreenState extends State<HomeScreen> {
     _foodsFuture = _foodService.getFoods();
   }
 
+  Future<void> _toggleFavorite(String foodId) async {
+    try {
+      await _foodService.toggleFavorite(foodId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -66,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       imageUrl: food.imageUrl,
                       imageAlt: food.imageAlt,
                       isFavorite: food.isFavorite,
+                      onFavoriteTap: () => _toggleFavorite(food.id),
                       onTap: () {
                          Navigator.pushNamed(
                            context, 

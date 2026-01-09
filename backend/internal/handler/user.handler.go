@@ -2,6 +2,7 @@ package handler
 
 import (
 	"backend/internal/dto"
+	"backend/internal/middleware"
 	"backend/internal/service"
 	"backend/pkg/response"
 	"encoding/json"
@@ -17,9 +18,13 @@ func NewUserHandler(service *service.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
-	// For demo, assume hardcoded user ID logic or token extraction
-	// In real app, extracting from Context (set by middleware)
-	userID := "1"
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		code, resp := response.Error("Unauthorized").SendWithStatus(200, 401)
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
 
 	user, err := h.service.GetProfile(r.Context(), userID)
 	w.Header().Set("Content-Type", "application/json")
@@ -36,7 +41,13 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
-	userID := "1" // Check auth middleware in real app
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		code, resp := response.Error("Unauthorized").SendWithStatus(200, 401)
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
 
 	var req dto.UpdateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

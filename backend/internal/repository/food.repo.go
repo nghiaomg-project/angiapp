@@ -93,3 +93,11 @@ func (r *MongoFoodRepository) SearchByIngredients(ctx context.Context, ingredien
 	}
 	return foods, nil
 }
+
+func (r *MongoFoodRepository) CountFavorites(ctx context.Context) (int64, error) {
+	return r.collection.CountDocuments(ctx, bson.M{"is_favorite": true})
+}
+
+func (r *MongoFoodRepository) CountAll(ctx context.Context) (int64, error) {
+	return r.collection.CountDocuments(ctx, bson.M{})
+}
