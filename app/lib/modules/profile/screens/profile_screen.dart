@@ -11,6 +11,8 @@ class ProfileScreen extends StatelessWidget {
     const primaryColor = Color(0xFFFF7A00);
     // const backgroundLight = Color(0xFFF8F8F5); // MainLayout handles this
 
+    final user = AuthService().currentUser;
+
     return MainLayout(
       title: 'Hồ Sơ',
       body: SingleChildScrollView(
@@ -19,13 +21,13 @@ class ProfileScreen extends StatelessWidget {
           children: [
             // Profile Header
             const SizedBox(height: 16),
-            _buildAvatarSection(primaryColor),
+            _buildAvatarSection(primaryColor, user?.photoUrl),
             const SizedBox(height: 16),
             
             // Name and Email
-            const Text(
-              'Nguyễn Văn A',
-              style: TextStyle(
+            Text(
+              user?.displayName ?? 'Chưa đặt tên',
+              style: const TextStyle(
                 fontFamily: 'Spline Sans',
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -34,7 +36,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'nguyenvana@gmail.com',
+              user?.email ?? 'Chưa có email',
               style: TextStyle(
                 fontFamily: 'Noto Sans',
                 fontSize: 16,
@@ -130,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatarSection(Color primaryColor) {
+  Widget _buildAvatarSection(Color primaryColor, String? photoUrl) {
     return Stack(
       children: [
         Container(
@@ -153,11 +155,16 @@ class ProfileScreen extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFFF8F8F5), width: 4),
               color: Colors.grey[200],
-              image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCNTyXbaXdmlVO4cZr6y2fgwoS8r8tZbB2mtMzc5iEJ2upg17WbNlaWlEpXhW3OHIngWDe_DbXa01rNs1dhCjVfsaNibgyw02Uno38Hw1kOeDJiUx5RnFuCIszsx65rAGnea9CZC-gkldymNsdMv_LaLitVwW0g4X3T_UMwL2g8_ANkKgMDMDq2nGl4d6kUW2iPqG9qSVqohyl-F1WHf8NDs_X9o8It9NCRBuj0SUs5FcQQcEhJfuS0dPJS6_ijFgJniUftjKe2x8GU'),
-                fit: BoxFit.cover,
-              ),
+              image: photoUrl != null 
+                  ? DecorationImage(
+                      image: NetworkImage(photoUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
+            child: photoUrl == null 
+                ? Icon(Icons.person, size: 64, color: Colors.grey[400])
+                : null,
           ),
         ),
         Positioned(

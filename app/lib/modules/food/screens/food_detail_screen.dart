@@ -10,7 +10,9 @@ class FoodDetailScreen extends StatefulWidget {
 }
 
 class _FoodDetailScreenState extends State<FoodDetailScreen> {
-  late Future<Food> _foodFuture;
+  Food? _food;
+  bool _isLoading = true;
+  String? _errorMessage;
   final FoodService _foodService = FoodService();
   String? _foodId;
 
@@ -20,7 +22,42 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is String && _foodId == null) {
       _foodId = args;
-      _foodFuture = _foodService.getFoodById(_foodId!);
+      _loadFood();
+    }
+  }
+
+  Future<void> _loadFood() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final food = await _foodService.getFoodById(_foodId!);
+      setState(() {
+        _food = food;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_food == null) return;
+    
+    // Optimistic update could be done here, or wait for server.
+    // Let's wait for server for consistency or do optimistic if slow.
+    // Server returns updated food object.
+    try {
+      final updatedFood = await _foodService.toggleFavorite(_foodId!);
+      setState(() {
+        _food = updatedFood;
+      });
+    } catch (e) {
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     }
   }
 
@@ -34,22 +71,23 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
        return const Scaffold(body: Center(child: Text('No food ID provided')));
     }
     
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(body: Center(child: Text('Error: $_errorMessage')));
+    }
+
+    if (_food == null) {
+      return const Scaffold(body: Center(child: Text('Food not found')));
+    }
+
+    final food = _food!;
+    
     return Scaffold(
       backgroundColor: backgroundLight,
-      body: FutureBuilder<Food>(
-        future: _foodFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData) {
-            return const Center(child: Text('Food not found'));
-          }
-
-          final food = snapshot.data!;
-
-          return Stack(
+      body: Stack(
             children: [
               // Header Image
               Positioned(
@@ -171,7 +209,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                                   icon: Icon(food.isFavorite ? Icons.favorite : Icons.favorite_border),
                                   color: food.isFavorite ? Colors.red : Colors.grey[500],
                                   iconSize: 24,
-                                  onPressed: () {},
+                                  onPressed: _toggleFavorite,
                                 ),
                               ),
                             ],
@@ -232,9 +270,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                 ),
               ),
             ],
-          );
-        }
-      ),
+          ),
     );
   }
 

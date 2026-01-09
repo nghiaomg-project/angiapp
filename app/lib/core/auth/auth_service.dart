@@ -11,12 +11,14 @@ class AuthService extends ChangeNotifier {
 
   bool _isLoggedIn = false;
   String? _pendingRoute;
+  GoogleSignInAccount? _currentUser;
 
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   bool _isGoogleInitialized = false;
 
   bool get isLoggedIn => _isLoggedIn;
   String? get pendingRoute => _pendingRoute;
+  GoogleSignInAccount? get currentUser => _currentUser;
 
   void login() {
     _isLoggedIn = true;
@@ -33,6 +35,7 @@ class AuthService extends ChangeNotifier {
       }
 
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      _currentUser = googleUser;
       
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -78,6 +81,7 @@ class AuthService extends ChangeNotifier {
       print("Sign out error: $e");
     }
     _isLoggedIn = false;
+    _currentUser = null;
     _pendingRoute = null;
     notifyListeners();
   }

@@ -48,4 +48,29 @@ class FoodService {
       throw Exception('Failed to load food');
     }
   }
+
+  Future<Food> toggleFavorite(String id) async {
+    try {
+      final baseUrl = dotenv.env['BASE_URL'];
+      if (baseUrl == null) throw Exception('BASE_URL not found in .env');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/foods/$id/favorite'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        if (data['data'] != null) {
+           return Food.fromJson(data['data']);
+        }
+        throw Exception('Food data empty');
+      } else {
+        throw Exception('Failed to toggle favorite: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      rethrow;
+    }
+  }
 }

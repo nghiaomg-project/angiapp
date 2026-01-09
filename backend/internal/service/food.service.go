@@ -138,6 +138,24 @@ func (s *FoodService) SearchByIngredients(ctx context.Context, req dto.SearchByI
 	return responses, nil
 }
 
+func (s *FoodService) ToggleFavorite(ctx context.Context, id string) (*dto.FoodResponse, error) {
+	food, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if food == nil {
+		return nil, errors.New("food not found")
+	}
+
+	food.IsFavorite = !food.IsFavorite
+	if err := s.repo.Update(ctx, id, *food); err != nil {
+		return nil, err
+	}
+
+	resp := s.mapToResponse(*food)
+	return &resp, nil
+}
+
 func (s *FoodService) mapToResponse(f model.Food) dto.FoodResponse {
 	return dto.FoodResponse{
 		ID:          f.ID,

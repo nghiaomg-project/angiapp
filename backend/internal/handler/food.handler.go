@@ -159,3 +159,27 @@ func (h *FoodHandler) SearchByIngredients(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(resp)
 }
+
+func (h *FoodHandler) ToggleFavorite(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		w.Header().Set("Content-Type", "application/json")
+		code, resp := response.Error("Missing food ID").SendWithStatus(200, 400)
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	food, err := h.service.ToggleFavorite(r.Context(), id)
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		code, resp := response.Error(err.Error()).Send()
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	code, resp := response.Success(food).Send()
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(resp)
+}

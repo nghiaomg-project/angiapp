@@ -26,6 +26,7 @@ func NewRouter(foodHandler *handler.FoodHandler, userHandler *handler.UserHandle
 	mux.HandleFunc("POST /api/foods", foodHandler.CreateFood)
 	mux.HandleFunc("POST /api/foods/search/ingredients", foodHandler.SearchByIngredients)
 	mux.HandleFunc("PUT /api/foods/{id}", foodHandler.UpdateFood)
+	mux.HandleFunc("POST /api/foods/{id}/favorite", foodHandler.ToggleFavorite)
 	mux.HandleFunc("DELETE /api/foods/{id}", foodHandler.DeleteFood)
 
 	// User Routes
