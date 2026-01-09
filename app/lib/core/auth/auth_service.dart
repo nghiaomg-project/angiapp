@@ -1,4 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
@@ -8,6 +12,11 @@ class AuthService extends ChangeNotifier {
   bool _isLoggedIn = false;
   String? _pendingRoute;
 
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: dotenv.env['GOOGLE_CLIENT_ID'],
+    scopes: ['email', 'profile'],
+  );
+
   bool get isLoggedIn => _isLoggedIn;
   String? get pendingRoute => _pendingRoute;
 
@@ -16,7 +25,46 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void logout() {
+  Future<bool> loginWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        return false;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken != null) {
+        final url = Uri.parse('${dotenv.env['BASE_URL']}/login/google');
+        print('Calling backend: $url');
+        
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'id_token': idToken}),
+        );
+
+        if (response.statusCode == 200) {
+          print('Google Login Success: ${response.body}');
+          _isLoggedIn = true;
+          notifyListeners();
+          return true;
+        } else {
+          print('Backend Login Failed: ${response.statusCode} - ${response.body}');
+          return false;
+        }
+      }
+    } catch (error) {
+      print('Google Sign In Error: $error');
+      return false;
+    }
+    return false;
+  }
+
+  void logout() async {
+    await _googleSignIn.signOut();
     _isLoggedIn = false;
     _pendingRoute = null;
     notifyListeners();

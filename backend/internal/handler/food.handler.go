@@ -2,6 +2,7 @@ package handler
 
 import (
 	"backend/internal/service"
+	"backend/pkg/response"
 	"encoding/json"
 	"net/http"
 )
@@ -16,11 +17,15 @@ func NewFoodHandler(service *service.FoodService) *FoodHandler {
 
 func (h *FoodHandler) GetFoods(w http.ResponseWriter, r *http.Request) {
 	foods, err := h.service.GetFoods(r.Context())
+	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		code, resp := response.Error(err.Error()).Send()
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(foods)
+	code, resp := response.Success(foods).Send()
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(resp)
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/app_theme.dart';
 import 'modules/login/screens/login_screen.dart';
 import 'modules/home/screens/home_screen.dart';
@@ -6,7 +7,8 @@ import 'modules/profile/screens/profile_screen.dart';
 import 'modules/ingredients/screens/ingredients_screen.dart';
 import 'modules/favorites/screens/favorites_screen.dart';
 
-void main() {
+void main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 

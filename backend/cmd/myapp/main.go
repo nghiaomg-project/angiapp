@@ -4,17 +4,45 @@ import (
 	"backend/internal/handler"
 	"backend/internal/repository"
 	"backend/internal/service"
+	"backend/pkg/database"
 	"backend/pkg/logger"
+	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	log := logger.New()
-	log.Info("Starting AnGi Backend...")
+	// Load .env file
+	if err := godotenv.Load("configs/config.env"); err != nil {
+		log.Println("No configs/config.env file found, using defaults")
+	}
+
+	appLogger := logger.New()
+	appLogger.Info("Starting AnGi Backend...")
+
+	// Database
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "angi_db"
+	}
+
+	mongoClient, err := database.ConnectMongoDB(mongoURI)
+	if err != nil {
+		appLogger.Error("Failed to connect to MongoDB:", err)
+		os.Exit(1)
+	}
+	db := mongoClient.Database(dbName)
+	appLogger.Info("Connected to MongoDB")
 
 	// Repositories
-	foodRepo := repository.NewInMemoryFoodRepository()
-	userRepo := repository.NewInMemoryUserRepository()
+	foodRepo := repository.NewMongoFoodRepository(db)
+	userRepo := repository.NewMongoUserRepository(db)
 
 	// Services
 	foodService := service.NewFoodService(foodRepo)
@@ -27,22 +55,24 @@ func main() {
 	// Router
 	mux := http.NewServeMux()
 
-	// Middleware
-	// Add your middleware here (Logger, CORS, Auth, etc.)
-
 	// Routes
 	mux.HandleFunc("GET /api/foods", foodHandler.GetFoods)
 	mux.HandleFunc("GET /api/profile", userHandler.GetProfile)
 	mux.HandleFunc("POST /api/login", userHandler.Login)
+	mux.HandleFunc("POST /api/login/google", userHandler.GoogleLogin)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 
 	// Server
-	serverAddr := ":8080"
-	log.Info("Server listening on " + serverAddr)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+	serverAddr := ":" + port
+	appLogger.Info("Server listening on " + serverAddr)
 	if err := http.ListenAndServe(serverAddr, mux); err != nil {
-		log.Error("Server failed:", err)
+		appLogger.Error("Server failed:", err)
 	}
 }

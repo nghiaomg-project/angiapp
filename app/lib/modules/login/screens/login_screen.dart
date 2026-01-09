@@ -112,9 +112,11 @@ class LoginScreen extends StatelessWidget {
                         children: [
                           const SizedBox(height: 16),
                           GoogleSignInButton(
-                            onPressed: () {
-                              AuthService().login();
-                              AuthGuard.navigateAfterLogin(context);
+                            onPressed: () async {
+                              final success = await AuthService().loginWithGoogle();
+                              if (success && context.mounted) {
+                                AuthGuard.navigateAfterLogin(context);
+                              }
                             },
                           ),
                           // const SizedBox(height: 24),
