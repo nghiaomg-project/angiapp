@@ -8,4 +8,3 @@ class ProtectedScreens {
     return protectedRoutes.contains(routeName);
   }
 }
-
