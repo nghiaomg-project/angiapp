@@ -290,16 +290,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
       ),
       child: Row(
         children: [
-           Container(
-             width: 24,
-             height: 24,
-             decoration: BoxDecoration(
-               borderRadius: BorderRadius.circular(6),
-               border: Border.all(color: Colors.grey[300]!, width: 2),
-             ),
-             child: const Icon(Icons.check, size: 16, color: Colors.transparent), 
-           ),
-           const SizedBox(width: 12),
            Expanded(
              child: Text(name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[800])),
            ),
