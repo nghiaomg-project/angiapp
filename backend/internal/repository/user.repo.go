@@ -47,3 +47,8 @@ func (r *MongoUserRepository) Create(ctx context.Context, user model.User) error
 	_, err := r.collection.InsertOne(ctx, user)
 	return err
 }
+
+func (r *MongoUserRepository) Update(ctx context.Context, id string, user model.User) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": user})
+	return err
+}

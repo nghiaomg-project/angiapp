@@ -56,8 +56,15 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Routes
+	// Routes
 	mux.HandleFunc("GET /api/foods", foodHandler.GetFoods)
+	mux.HandleFunc("POST /api/foods", foodHandler.CreateFood)
+	mux.HandleFunc("PUT /api/foods/{id}", foodHandler.UpdateFood)
+	mux.HandleFunc("DELETE /api/foods/{id}", foodHandler.DeleteFood)
+
 	mux.HandleFunc("GET /api/profile", userHandler.GetProfile)
+	mux.HandleFunc("PUT /api/profile", userHandler.UpdateProfile)
+
 	mux.HandleFunc("POST /api/login", userHandler.Login)
 	mux.HandleFunc("POST /api/login/google", userHandler.GoogleLogin)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
