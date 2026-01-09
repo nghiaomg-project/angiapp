@@ -18,7 +18,7 @@ class _LoginMascotState extends State<LoginMascot>
   void initState() {
     super.initState();
     _bounceController = AnimationController(
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 9000),
       vsync: this,
     )..repeat(reverse: true);
 
